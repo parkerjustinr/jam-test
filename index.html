@@ -106,6 +106,39 @@
   </main>
 
   <script>
+    // Give the RSVP button a random color on each page load.
+    (function () {
+      var button = document.getElementById("rsvp");
+      var lastHue = NaN;
+      try { lastHue = parseFloat(localStorage.getItem("rsvpHue")); } catch (e) {}
+
+      // Keep picking until the hue is clearly different from the last visit's.
+      var hue;
+      do {
+        hue = Math.floor(Math.random() * 360);
+      } while (!isNaN(lastHue) &&
+               Math.min(Math.abs(hue - lastHue), 360 - Math.abs(hue - lastHue)) < 60);
+      try { localStorage.setItem("rsvpHue", hue); } catch (e) {}
+
+      // Convert HSL to RGB so we can pick readable text (black or white).
+      var s = 0.75, l = 0.5;
+      function channel(n) {
+        var k = (n + hue / 30) % 12;
+        return l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+      }
+      function linear(c) {
+        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      }
+      var luminance = 0.2126 * linear(channel(0)) +
+                      0.7152 * linear(channel(8)) +
+                      0.0722 * linear(channel(4));
+      var contrastWhite = 1.05 / (luminance + 0.05);
+      var contrastBlack = (luminance + 0.05) / 0.05;
+
+      button.style.setProperty("--accent", "hsl(" + hue + ", 75%, 50%)");
+      button.style.setProperty("--accent-text", contrastWhite >= contrastBlack ? "#ffffff" : "#111111");
+    })();
+
     document.getElementById("rsvp").addEventListener("click", function () {
       this.textContent = "You're going!";
       this.disabled = true;
